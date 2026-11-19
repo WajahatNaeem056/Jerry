@@ -1,0 +1,82 @@
+/* Colour palette tokens. Every colour used in style.css, app.css and targeting.css is defined here once. */
+:root {
+  --color-black: #000000;
+
+  --color-blue-9: #0d1522;
+  --color-blue-12: #121c2b;
+  --color-blue-13: #111f33;
+  --color-blue-37: #445a7a;
+  --color-blue-66: #2979ff;
+  --color-blue-84: #aac8ff;
+  --color-blue-85: #b3d1ff;
+  --color-blue-90: #e4e4e9;
+  --color-blue-93: #dce8ff;
+  --color-blue-95: #eff1f4;
+  --color-blue-95-a: #eef2f8;
+  --color-blue-97: #f7f7fa;
+
+  --color-gray-7: #121212;
+  --color-gray-10: #18181b;
+  --color-gray-11: #1c1c1e;
+  --color-gray-11-a: #1b1b1f;
+  --color-gray-12: #1e1e1e;
+  --color-gray-15: #252525;
+  --color-gray-16: #2a2a2a;
+  --color-gray-24: #3a3a3f;
+  --color-gray-34: #52525b;
+  --color-gray-35: #55555c;
+  --color-gray-38: #5c5c66;
+  --color-gray-44: #6b6b73;
+  --color-gray-46: #71717a;
+  --color-gray-46-a: #6b7280;
+  --color-gray-49: #79797f;
+  --color-gray-62: #9a9aa2;
+  --color-gray-63: #a0a0a0;
+  --color-gray-64: #9aa1ac;
+  --color-gray-67: #a8a8b0;
+  --color-gray-71: #b0b0b8;
+  --color-gray-79: #c6c6cd;
+  --color-gray-79-a: #c7c7ce;
+  --color-gray-87: #dadae0;
+  --color-gray-88: #e0e0e0;
+  --color-gray-88-a: #dedee3;
+  --color-gray-89: #e0e0e5;
+  --color-gray-96: #f5f5f5;
+  --color-gray-97: #f7f7f8;
+
+  --color-green-36: #00b96b;
+  --color-green-49: #2ecc71;
+  --color-green-58: #4cde8a;
+  --color-green-90: #d8f5e8;
+
+  --color-orange-38: #b8860b;
+  --color-orange-55: #f5a524;
+  --color-orange-93: #fff0dc;
+
+  --color-red-59: #e5484d;
+
+  --color-accent-40: #1556b8;
+  --color-accent-42: #1a64cc;
+  --color-accent-45: #1e78ee;
+  --color-accent-47: #1e78ee;
+  --color-accent-50: #1c6ae0;
+  --color-accent-58: #2979ff;
+  --color-accent-65: #448aff;
+  --color-accent-66: #5c9dff;
+  --color-accent-70: #6ea8ff;
+  --color-accent-74: #90b8f0;
+  --color-accent-76: #82b1ff;
+  --color-accent-83: #a9c9ff;
+  --color-accent-94: #e3efff;
+
+  --color-white: #ffffff;
+}
+
+/* AMOLED theme: dark with a pure black background (enabled via data-amoled on <html>) */
+:root[data-amoled="1"][data-theme-resolved=dark] {
+  --color-gray-7: #000000;
+  --color-gray-11: #121212;
+  --color-gray-12: #151515;
+  --color-gray-15: #1c1c1c;
+  --color-gray-16: #2a2a2a;
+}

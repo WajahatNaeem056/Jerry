@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <style>md-icon:not(:defined){display:none}</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <title data-i18n="app_title">Jerry Manager</title>
+
+  <script>
+    (function () {
+      try { document.documentElement.setAttribute('data-ui-style', 'default'); } catch (e) { document.documentElement.setAttribute('data-ui-style', 'default'); }
+      var saved = null;
+      try { saved = localStorage.getItem('themeMode'); } catch(e) {}
+      var isFirstInstall = (saved === null || saved === undefined);
+      var mode = isFirstInstall ? 'dark' : saved;
+      if (isFirstInstall) {
+        try { localStorage.setItem('themeMode', 'dark'); } catch(e) {}
+      }
+      var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var resolved = mode === 'auto' ? (systemDark ? 'dark' : 'light') : mode;
+      document.documentElement.setAttribute('data-theme', mode);
+      document.documentElement.setAttribute('data-theme-resolved', resolved);
+      document.documentElement.style.colorScheme = resolved;
+      try { if (mode === 'dark' && localStorage.getItem('amoled') === '1') document.documentElement.setAttribute('data-amoled', '1'); } catch(e) {}
+      if (mode === 'auto' && !window.__autoThemeListener) {
+        window.__autoThemeListener = function(e) {
+          var currentMode = 'auto';
+          try { currentMode = localStorage.getItem('themeMode') || 'auto'; } catch(e) {}
+          if (currentMode === 'auto') {
+            var newResolved = e.matches ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme-resolved', newResolved);
+            document.documentElement.style.colorScheme = newResolved;
+          }
+        };
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', window.__autoThemeListener);
+      }
+    })();
+  </script>
+  <script>
+  window.__setTheme = function(mode) {
+    var amoled = (mode === 'amoled');
+    var shown = mode;
+    if (amoled) mode = 'dark';
+    ['amoled','dark','auto','light'].forEach(function(m) {
+      var btn = document.getElementById('theme-btn-' + m);
+      if (btn) btn.classList.toggle('active', m === shown);
+    });
+    if (amoled) document.documentElement.setAttribute('data-amoled', '1');
+    else document.documentElement.removeAttribute('data-amoled');
+    try { localStorage.setItem('amoled', amoled ? '1' : '0'); } catch(e) {}
+    document.documentElement.setAttribute('data-theme', mode);
+    var resolved = mode === 'auto'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : mode;
+    document.documentElement.setAttribute('data-theme-resolved', resolved);
+    document.documentElement.style.colorScheme = resolved;
+    try { localStorage.setItem('themeMode', mode); } catch(e) {}
+    if (mode === 'auto' && !window.__autoThemeListener) {
+      window.__autoThemeListener = function(e) {
+        try { var m = localStorage.getItem('themeMode') || 'auto'; } catch(ex) { var m = 'auto'; }
+        if (m === 'auto') {
+          var r = e.matches ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme-resolved', r);
+          document.documentElement.style.colorScheme = r;
+        }
+      };
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', window.__autoThemeListener);
+    }
+  };
+  window.__openCommunityLink = function(url) {
+    try {
+      if (window.ksu && typeof window.ksu.exec === 'function') {
+        var safeUrl = url.replace(/'/g, "\\'");
+        var cb = 'communityLink_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+        window[cb] = function() { delete window[cb]; };
+        window.ksu.exec("am start -a android.intent.action.VIEW -d '" + safeUrl + "'", '{}', cb);
+      } else {
+        window.open(url, '_blank');
+      }
+    } catch (e) {
+      window.open(url, '_blank');
+    }
+  };
+  document.addEventListener('DOMContentLoaded', function() {
+    var saved = 'dark';
+    try { saved = localStorage.getItem('themeMode') || 'dark'; } catch(e) {}
+    try { if (saved === 'dark' && localStorage.getItem('amoled') === '1') saved = 'amoled'; } catch(e) {}
+    setTimeout(function() {
+      ['amoled','dark','auto','light'].forEach(function(m) {
+        var btn = document.getElementById('theme-btn-' + m);
+        if (btn) btn.classList.toggle('active', m === saved);
+      });
+    }, 300);
+  });
+  </script>
+  <style>
+    /* Actions page: tighter spacing */
+    #actions-page .list-item{padding:8px 14px!important;min-height:50px!important;gap:10px!important}
+    #actions-page .list-item-content{gap:2px!important}
+    #actions-page .list-container{margin-bottom:4px!important}
+    #actions-page .list-title{padding:4px 16px 2px!important}
+    /* Community cards: shorter */
+    .community-card{padding:16px!important;min-height:122px!important;gap:4px!important}
+    .community-card__icon{margin-bottom:6px!important}
+    .community-card__desc{padding-right:0!important;line-height:1.35!important}
+    .community-card__arrow{top:14px!important;bottom:auto!important;width:26px!important;height:26px!important}
+    /* Arabic: fallback Arabic font renders larger; scale down on Control + Other pages only */
+    :root[lang=ar] #control-page .list-title,:root[lang=ar] #settings-page .list-title{font-size:.9rem!important}
+    :root[lang=ar] .ctrl-row-title,:root[lang=ar] .ctrl-card-title{font-size:.82rem!important;line-height:1.3!important}
+    :root[lang=ar] .ctrl-row-desc,:root[lang=ar] .ctrl-card-desc{font-size:.64rem!important;line-height:1.35!important}
+    :root[lang=ar] .ctrl-badge,:root[lang=ar] .ctrl-heading-badge{font-size:.62rem!important}
+    :root[lang=ar] .community-card__title{font-size:.86rem!important}
+    :root[lang=ar] .community-card__desc{font-size:.67rem!important;line-height:1.35!important}
+    :root[lang=ar] .theme-btn-label{font-size:.64rem!important}
+    :root[lang=ar] #settings-page .jerry-lang-trigger{font-size:.9em!important}
+    /* Arabic: fixed line-heights so the fallback font cannot stretch the Other / Control pages */
+    :root[lang=ar] #settings-page .list-title,:root[lang=ar] #control-page .list-title{line-height:1.3!important}
+    :root[lang=ar] .theme-btn-label{line-height:1.3!important}
+    :root[lang=ar] #settings-page .jerry-lang-trigger{line-height:1.3!important}
+    /* Arabic: fixed label line-height so the fallback font cannot make the bottom nav taller */
+    :root[lang=ar] .jerry-nav-label{line-height:1.3!important;font-size:.7rem!important}
+  </style>
+  <script type="module" src="/src/index.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+
+    <header class="app-top-bar" id="top-bar">
+      <span class="md-typescale-headline-medium app-title" data-i18n="app_title">Jerry Manager</span>
+      <div style="flex: 1"></div>
+      <!-- Hidden network chip — required by JS bridge for online/offline detection -->
+      <span id="network-chip" class="network-chip" style="display:none">
+        <md-icon>wifi</md-icon>
+        <span id="network-label">Online</span>
+      </span>
+    </header>
+
+    <main>
+      <div id="pages">
+
+        <section id="home-page">
+
+          <md-filled-card id="keybox-card" class="hero-card">
+            <div class="keybox-inner">
+              <md-icon id="keybox-icon" style="display:none">verified_user</md-icon>
+              <div class="keybox-text">
+                <p class="keybox-label" data-i18n="home_keybox_status" id="keybox-label">KEYBOX STATUS</p>
+                <p class="keybox-value" id="keybox-value">Checking... <span id="keybox-num"></span></p>
+              </div>
+            </div>
+          </md-filled-card>
+
+          <div class="jf-combined-card">
+
+            <div class="jf-row">
+              <div class="jf-row-icon" id="status-icon-wrap"><md-icon id="status-icon">wifi</md-icon></div>
+              <span class="jf-row-lbl">Status</span>
+              <span class="jf-row-val green" id="status-value">—</span>
+            </div>
+
+            <div class="jf-row">
+              <div class="jf-row-icon"><md-icon>android</md-icon></div>
+              <span class="jf-row-lbl" data-i18n="home_android">Android</span>
+              <span class="jf-row-val" id="android-value">—</span>
+            </div>
+
+            <div class="jf-row">
+              <div class="jf-row-icon"><md-icon>admin_panel_settings</md-icon></div>
+              <span class="jf-row-lbl" data-i18n="home_root">Root</span>
+              <span class="jf-row-val" id="root-value">—</span>
+            </div>
+
+            <div class="jf-row">
+              <div class="jf-row-icon"><md-icon>desktop_windows</md-icon></div>
+              <span class="jf-row-lbl">ROM</span>
+              <span class="jf-row-val" id="rom-value">—</span>
+            </div>
+
+            <div class="jf-row">
+              <div class="jf-row-icon"><md-icon>fingerprint</md-icon></div>
+              <span class="jf-row-lbl" data-i18n="home_pif_status">PIF Status</span>
+              <span class="jf-row-val" id="pif-status-value">—</span>
+            </div>
+
+            <div class="jf-row">
+              <div class="jf-row-icon"><md-icon>key</md-icon></div>
+              <span class="jf-row-lbl" data-i18n="home_keystore_backend">Keystore Backend</span>
+              <span class="jf-row-val" id="keystore-backend-value">—</span>
+            </div>
+
+          </div>
+
+        </section>
+
+        <section id="actions-page" hidden>
+
+          <div class="list-title" data-i18n="menu_keybox">Keybox</div>
+          <div class="list-container">
+            <div class="list-item" data-script="keybox.sh">
+              <md-icon>key</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_import_keybox">Install Jerry Keybox</div>
+                <span class="supporting-text" data-i18n="menu_import_keybox_desc">Downloads and installs remote keybox to the active keystore backend</span>
+              </div>
+              <div class="spacer"></div>
+              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+              <md-ripple></md-ripple>
+            </div>
+            <div class="list-item" id="custom-keybox-btn" style="cursor:pointer" onclick="openCustomKeybox()">
+              <md-icon>upload_file</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_custom_keybox">Set Custom Keybox</div>
+                <span class="supporting-text" data-i18n="menu_custom_keybox_desc">Select your own keybox XML file from your device</span>
+              </div>
+              <div class="spacer"></div>
+              <md-icon class="icon-chevron">chevron_right</md-icon>
+              <md-ripple></md-ripple>
+            </div>
+            <div class="list-item omk-only" id="omk-open-btn" style="cursor:pointer;display:none" onclick="openOmkPanel()">
+              <md-icon>tune</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_omk_config">OhMyKeymint Config</div>
+                <span class="supporting-text" data-i18n="menu_omk_config_desc">Trust fields, restart services and injector.toml</span>
+              </div>
+              <div class="spacer"></div>
+              <md-icon class="icon-chevron">chevron_right</md-icon>
+              <md-ripple></md-ripple>
+            </div>
+          </div>
+
+          <div class="list-title" data-i18n="menu_rkp_keybox">RKP Keyboxes</div>
+          <div class="list-container">
+            <div class="list-item" id="rkp-open-btn" style="cursor:pointer" onclick="openRkpPanel()">
+              <md-icon>key</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_rkp_catalog">RKP Keybox Catalog</div>
+                <span class="supporting-text" data-i18n="menu_rkp_catalog_desc">Available RKP keybox entries</span>
+              </div>
+              <div class="spacer"></div>
+              <md-icon class="icon-chevron">chevron_right</md-icon>
+              <md-ripple></md-ripple>
+            </div>
+          </div>
+
+          <div class="list-title" data-i18n="menu_pif_configs">PIF Configs</div>
+          <div class="list-container">
+
+            <div class="list-item" id="pif-settings-btn" onclick="openPifSettings()">
+              <md-icon>fingerprint</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_pif_settings">PIF Settings</div>
+                <span class="supporting-text" data-i18n="menu_pif_settings_desc">Fetch fingerprint and spoof toggles</span>
+              </div>
+              <div class="spacer"></div>
+              <md-icon class="icon-chevron">chevron_right</md-icon>
+              <md-ripple></md-ripple>
+            </div>
+
+            <div class="list-item" id="pif-import" role="button" tabindex="0">
+              <md-icon>file_download</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="pif_import_title">Import fingerprint</div>
+                <span class="supporting-text" id="pif-import-desc" data-i18n="pif_import_desc">Load a pif.json or pif.prop file</span>
+              </div>
+              <div class="spacer"></div>
+              <md-icon class="icon-chevron">chevron_right</md-icon>
+              <md-ripple></md-ripple>
+            </div>
+
+          </div>
+
+          <div class="list-title" data-i18n="menu_tricky_store">Keystore Backend</div>
+          <div class="list-container">
+            <div class="list-item" id="app-targeting-btn" onclick="openAppTargeting()">
+              <md-icon>manage_search</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_app_targeting">App Targeting</div>
+                <span class="supporting-text" data-i18n="menu_app_targeting_desc">Manage per-app targeting states interactively</span>
+              </div>
+              <div class="spacer"></div>
+              <md-icon class="icon-chevron">chevron_right</md-icon>
+              <md-ripple></md-ripple>
+            </div>
+
+            <div class="list-item" id="security-patch-btn" onclick="openSecurityPatch()">
+              <md-icon>security_update_good</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_patch">Set Security Patch</div>
+                <span class="supporting-text" data-i18n="menu_patch_desc">Manually enter the spoofed security patch date</span>
+              </div>
+              <div class="spacer"></div>
+              <md-icon class="icon-chevron">chevron_right</md-icon>
+              <md-ripple></md-ripple>
+            </div>
+
+            <div class="list-item" id="boot-hash-btn" onclick="openBootHash()">
+              <md-icon>verified</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="advance_set_verified_boot">Set Verified Boot Hash</div>
+                <span class="supporting-text" data-i18n="advance_set_verified_boot_desc">Manually set or refresh the verified boot hash</span>
+              </div>
+              <div class="spacer"></div>
+              <md-icon class="icon-chevron">chevron_right</md-icon>
+              <md-ripple></md-ripple>
+            </div>
+          </div>
+
+        </section>
+
+        <section id="advanced-page" hidden>
+
+          <div class="list-title" data-i18n="advance_menu_title_extended">Detection Fixes</div>
+          <div class="list-container">
+            <div class="list-item" data-script="cleanup.sh" data-destructive>
+              <md-icon>delete_sweep</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="advance_clear_all_detection_traces">Clear All Detection Traces</div>
+                <span class="supporting-text" data-i18n="advance_clear_all_detection_traces_desc">Deletes detector app data, temp files, resets props, removes ODEX</span>
+              </div>
+              <div class="spacer"></div>
+              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+              <md-ripple></md-ripple>
+            </div>
+
+            <div class="list-item" data-script="kill_all.sh" data-destructive>
+              <md-icon>cancel</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="advance_kill_all">Kill All Processes</div>
+                <span class="supporting-text" data-i18n="advance_kill_all_desc">Force-stops and clears data for all known detector apps</span>
+              </div>
+              <div class="spacer"></div>
+              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+              <md-ripple></md-ripple>
+            </div>
+
+            <div class="list-item" data-script="banking_mode.sh" data-destructive>
+              <md-icon>account_balance</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_banking_mode">Banking Mode</div>
+                <span class="supporting-text" data-i18n="menu_banking_mode_desc">Clears GMS cache, fixes banking & payment app detection</span>
+              </div>
+              <div class="spacer"></div>
+              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+              <md-ripple></md-ripple>
+            </div>
+          </div>
+
+          <div class="list-title" data-i18n="menu_google_services">Google Services</div>
+          <div class="list-container">
+            <div class="list-item" data-script="gms_force_clear.sh">
+              <md-icon>block</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="menu_force_clear">Force Clear Play Store</div>
+                <span class="supporting-text" data-i18n="menu_force_clear_desc">Kills DroidGuard, stops GMS & Chrome, clears Play Store data</span>
+              </div>
+              <div class="spacer"></div>
+              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+              <md-ripple></md-ripple>
+            </div>
+          </div>
+
+          <div class="list-title" data-i18n="advance_menu_title_config">Module Configs</div>
+          <div class="list-container">
+
+            <div class="list-item" data-script="zygisk_next.sh">
+              <md-icon>tune</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="advance_set_zygisk_next_configs">Set Zygisk Next Configs</div>
+                <span class="supporting-text" data-i18n="advance_set_zygisk_desc">Configures enforce-denylist, memory-type, linker settings</span>
+              </div>
+              <div class="spacer"></div>
+              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+              <md-ripple></md-ripple>
+            </div>
+
+          </div>
+
+          <div class="list-title" data-i18n="advance_tee_section">Fix TEE: OnePlus, RedMagic, Realme, Oppo…</div>
+          <div class="list-container">
+            <div class="list-item" data-script="widevine.sh" data-destructive>
+              <md-icon>layers</md-icon>
+              <div class="list-item-content">
+                <div class="toggle-text" data-i18n="advance_wdevinel1">Fix Widevine L1</div>
+                <span class="supporting-text" data-i18n="advance_wdevinel1_desc">Downloads attestation key and runs KmInstallKeybox vendor binary</span>
+              </div>
+              <div class="spacer"></div>
+              <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+              <md-ripple></md-ripple>
+            </div>
+          </div>
+
+        </section>
+
+        <section id="control-page" hidden>
+
+          <div class="ctrl-heading-row">
+            <div class="list-title" data-i18n="control_boot_title">Boot Behavior</div>
+            <span class="ctrl-heading-badge" id="ctrl-badge-boot">–</span>
+          </div>
+          <div class="list-container ctrl-rows" id="ctrl-rows-boot" data-group="boot"></div>
+
+          <div class="ctrl-heading-row">
+            <div class="list-title" data-i18n="control_custom_rom_title">Custom Rom</div>
+            <span class="ctrl-heading-badge" id="ctrl-badge-custom_rom">–</span>
+          </div>
+          <div class="list-container ctrl-rows" id="ctrl-rows-custom_rom" data-group="custom_rom"></div>
+
+          <div class="ctrl-heading-row">
+            <div class="list-title" data-i18n="control_adb_title">ADB &amp; Debug Disabler</div>
+            <span class="ctrl-heading-badge" id="ctrl-badge-adb">–</span>
+          </div>
+          <div class="list-container ctrl-rows" id="ctrl-rows-adb" data-group="adb"></div>
+
+          <div class="ctrl-heading-row">
+            <div class="list-title" data-i18n="control_automation_title">Automation</div>
+            <span class="ctrl-heading-badge" id="ctrl-badge-automation">–</span>
+          </div>
+          <div class="list-container ctrl-rows" id="ctrl-rows-automation" data-group="automation"></div>
+
+          <div class="ctrl-heading-row">
+            <div class="list-title" data-i18n="control_action_title">Action Pipeline</div>
+            <span class="ctrl-heading-badge" id="ctrl-badge-action">–</span>
+          </div>
+          <div class="list-container ctrl-rows" id="ctrl-rows-action" data-group="action"></div>
+
+        </section>
+
+        <section id="settings-page" hidden>
+
+          <div class="list-title" data-i18n="settings_language">Language</div>
+          <div id="language-select" class="jerry-lang-select" style="width:100%;">
+            <button type="button" id="jerry-lang-trigger" class="jerry-lang-trigger" aria-haspopup="listbox" aria-expanded="false">
+              <span id="jerry-lang-trigger-label" class="jerry-lang-trigger-label"></span>
+              <md-icon class="jerry-lang-trigger-arrow">expand_more</md-icon>
+            </button>
+            <div id="jerry-lang-menu" class="jerry-lang-menu" role="listbox" hidden></div>
+          </div>
+
+          <div class="list-title" data-i18n="settings_theme">Theme</div>
+          <div class="theme-toggle-card" id="theme-toggle-card">
+            <button class="theme-btn" id="theme-btn-amoled" onclick="window.__setTheme('amoled')">
+              <svg class="theme-btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="width:var(--icon-inline,20px);height:var(--icon-inline,20px);flex:none"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18V4a8 8 0 0 1 0 16z"/></svg>
+              <span class="theme-btn-label" data-i18n="theme_amoled">AMOLED</span>
+            </button>
+            <button class="theme-btn" id="theme-btn-dark" onclick="window.__setTheme('dark')">
+              <md-icon class="theme-btn-icon">dark_mode</md-icon>
+              <span class="theme-btn-label" data-i18n="theme_dark">Dark</span>
+            </button>
+            <button class="theme-btn" id="theme-btn-auto" onclick="window.__setTheme('auto')">
+              <md-icon class="theme-btn-icon">brightness_auto</md-icon>
+              <span class="theme-btn-label" data-i18n="theme_auto">Auto</span>
+            </button>
+            <button class="theme-btn" id="theme-btn-light" onclick="window.__setTheme('light')">
+              <md-icon class="theme-btn-icon">light_mode</md-icon>
+              <span class="theme-btn-label" data-i18n="theme_light">Light</span>
+            </button>
+          </div>
+
+          <div class="list-title" data-i18n="settings_community">Community</div>
+          <div class="community-grid" id="community-links-card">
+            <button class="community-card" id="community-btn-chat" onclick="window.__openCommunityLink('https://t.me/JerryChatt')" aria-label="Open JerryChat on Telegram">
+              <md-icon class="community-card__icon">forum</md-icon>
+              <span class="community-card__title">JerryChat</span>
+              <span class="community-card__desc" data-i18n="community_chat_desc">Chat with users and get help</span>
+              <md-icon class="community-card__arrow" aria-hidden="true">chevron_right</md-icon>
+            </button>
+            <button class="community-card" id="community-btn-tweaks" onclick="window.__openCommunityLink('https://t.me/JerryTweaks')" aria-label="Open JerryTweaks on Telegram">
+              <md-icon class="community-card__icon">campaign</md-icon>
+              <span class="community-card__title">JerryTweaks</span>
+              <span class="community-card__desc" data-i18n="community_tweaks_desc">Share tweaks and experience more</span>
+              <md-icon class="community-card__arrow" aria-hidden="true">chevron_right</md-icon>
+            </button>
+          </div>
+
+        </section>
+
+      </div>
+
+    <div id="app-targeting-panel" style="display:none;position:fixed;inset:0;z-index:200;flex-direction:column;overflow:hidden;" class="at-panel">
+      <div class="at-header">
+        <button onclick="closeAppTargeting()" class="at-back-btn">
+          <md-icon>arrow_back</md-icon>
+        </button>
+        <span class="at-title" id="at-title" data-i18n="menu_app_targeting">App Targeting</span>
+        <div id="at-saving-indicator" style="display:none;font-size:12px;" class="at-saving" data-i18n="at_saving">Saving…</div>
+        <div style="position:relative;">
+          <button onclick="atToggleMenu(event)" class="at-back-btn" data-at-menu-trigger aria-label="More options" data-i18n-aria-label="at_menu_more">
+            <md-icon style="pointer-events:none;">more_vert</md-icon>
+          </button>
+          <div id="at-menu" role="menu" aria-label="App Targeting actions" data-i18n-aria-label="at_menu_label" class="at-menu-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:210;width:207px;background:var(--at-menu-bg);border:1px solid var(--at-border);border-radius:18px;box-shadow:0 4px 12px var(--at-shadow);padding:6px;overflow:hidden;">
+            <button class="at-menu-item" role="menuitem" id="at-menu-selectall-btn" onclick="atSelectAll()">
+              <md-icon>select_all</md-icon>
+              <span data-i18n="at_menu_select_all">Select All</span>
+            </button>
+            <button class="at-menu-item" role="menuitem" id="at-menu-deselectall-btn" onclick="atDeselectAll()">
+              <md-icon>deselect</md-icon>
+              <span data-i18n="at_menu_deselect_all">Deselect All</span>
+            </button>
+            <button class="at-menu-item at-menu-target-only" role="menuitem" id="at-menu-deselectunnecessary-btn" onclick="atDeselectUnnecessary()">
+              <md-icon>playlist_remove</md-icon>
+              <span data-i18n="at_menu_deselect_unnecessary">Deselect Unnecessary</span>
+            </button>
+            <div class="at-menu-divider at-menu-target-only" role="separator"></div>
+            <button class="at-menu-item at-menu-target-only" role="menuitem" id="at-menu-synddenylist-btn" onclick="atSyncDenyList()">
+              <md-icon>sync</md-icon>
+              <span data-i18n="at_menu_sync_denylist">Sync from DenyList</span>
+            </button>
+            <div class="at-menu-divider" role="separator"></div>
+            <button class="at-menu-item" role="menuitemcheckbox" aria-checked="false" id="at-menu-togglesystem-btn" onclick="atToggleSystemApps()">
+              <md-icon>apps</md-icon>
+              <span id="at-menu-togglesystem-label">Show system apps</span>
+              <md-icon class="at-menu-state">check</md-icon>
+            </button>
+            <div class="at-menu-divider" role="separator"></div>
+            <button class="at-menu-item" role="menuitem" id="at-menu-blacklist-btn" onclick="atToggleBlacklistMode()">
+              <md-icon id="at-menu-blacklist-icon">block</md-icon>
+              <span id="at-menu-blacklist-label">Edit blacklist</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <div class="at-search-wrap">
+        <div class="at-search-box">
+          <md-icon class="icon-sm" style="opacity:0.5;flex-shrink:0;">search</md-icon>
+          <input id="at-search" type="text" placeholder="Search apps" data-i18n-placeholder="at_search_placeholder" oninput="atFilter()" class="at-search-input">
+        </div>
+      </div>
+      <div class="at-chips-row">
+        <button class="at-chip at-chip-active" id="at-chip-all" onclick="atSetFilter('all')">
+          <md-icon class="icon-sm icon-chip">done_all</md-icon><span data-i18n="at_chip_all">All</span>
+        </button>
+        <button class="at-chip" id="at-chip-selected" onclick="atSetFilter('selected')">
+          <md-icon class="icon-sm icon-chip">check_circle</md-icon><span id="at-chip-selected-label" data-i18n="at_chip_selected">Selected</span>
+        </button>
+        <button class="at-chip" id="at-chip-not-selected" onclick="atSetFilter('not-selected')">
+          <md-icon class="icon-sm icon-chip">radio_button_unchecked</md-icon><span id="at-chip-not-selected-label" data-i18n="at_chip_not_selected">Not Selected</span>
+        </button>
+      </div>
+      <div id="at-loading" style="display:flex;align-items:center;justify-content:center;flex:1;gap:12px;">
+        <md-circular-progress indeterminate></md-circular-progress>
+        <span style="opacity:0.6;" data-i18n="at_loading">Loading apps…</span>
+      </div>
+      <div id="at-list" style="display:none;flex:1;overflow-y:auto;padding:0 8px 100px;"></div>
+      <div class="at-fab-wrap">
+        <button id="at-apply-btn" onclick="atApply()" class="at-apply-fab">
+          <md-icon class="icon-sm">check</md-icon>
+          <span data-i18n="at_apply">Apply</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="omk-panel-root" class="at-panel pif-page omk-page">
+      <div class="at-header">
+        <button onclick="closeOmkPanel()" class="at-back-btn">
+          <md-icon>arrow_back</md-icon>
+        </button>
+        <div class="omk-title-wrap"><span class="at-title">OhMyKeymint</span><span class="omk-subtitle" data-i18n="omk_subtitle">Configuration</span></div>
+      </div>
+      <div id="omk-scroll" class="pif-scroll">
+        <div class="omk-wrap">
+
+          <div class="pif-btn-row">
+            <button type="button" id="omk-reload" class="pif-btn pif-btn--outline"><md-icon>refresh</md-icon><span class="pif-btn-label" data-i18n="omk_reload">Reload</span></button>
+            <button type="button" id="omk-restore" class="pif-btn pif-btn--outline"><md-icon>history</md-icon><span class="pif-btn-label" data-i18n="omk_restore">Restore</span></button>
+          </div>
+
+          <div class="omk-card">
+            <div class="omk-card-title" data-i18n="omk_restart_services">Restart services</div>
+            <div class="omk-restart-row">
+              <button type="button" class="pif-btn pif-btn--outline omk-chip-btn" data-omk-restart="injector"><md-icon>sync</md-icon><span class="pif-btn-label">Injector</span></button>
+              <button type="button" class="pif-btn pif-btn--outline omk-chip-btn" data-omk-restart="keymint"><md-icon>vpn_key</md-icon><span class="pif-btn-label">KeyMint</span></button>
+              <button type="button" class="pif-btn pif-btn--outline omk-chip-btn omk-chip-btn--danger" data-omk-restart="both"><md-icon>power_settings_new</md-icon><span class="pif-btn-label" data-i18n="omk_both">Both</span></button>
+            </div>
+          </div>
+
+          <div class="omk-tabs" role="tablist">
+            <button type="button" class="omk-tab omk-tab--active" data-omk-tab="config" role="tab">config.toml</button>
+            <button type="button" class="omk-tab" data-omk-tab="injector" role="tab">injector.toml</button>
+          </div>
+
+          <button type="button" id="omk-adv-btn" class="pif-btn pif-btn--outline omk-wide"><md-icon>tune</md-icon><span class="pif-btn-label" data-i18n="omk_adv_show">Show advanced settings</span><md-icon class="omk-adv-chev">expand_more</md-icon></button>
+
+          <div id="omk-status" class="omk-status" style="display:none"></div>
+
+          <div id="omk-tab-config">
+            <div id="omk-fields"></div>
+          </div>
+
+          <div id="omk-tab-injector" style="display:none">
+            <div class="omk-card">
+              <div class="omk-card-title">injector.toml</div>
+              <div class="omk-hint" data-i18n="omk_inj_hint">Target apps are normally managed from App Targeting. Edit this raw file only if you know the OMK injector format.</div>
+              <textarea id="omk-inj-text" class="omk-input omk-textarea" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="at-fab-wrap" id="omk-savebar" style="display:none">
+        <button id="omk-save-btn" type="button" class="at-apply-fab">
+          <md-icon class="icon-sm">check</md-icon>
+          <span id="omk-save-label" data-i18n="common_save">Save</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="pif-settings-panel" class="at-panel pif-page">
+      <div class="at-header">
+        <button onclick="closePifSettings()" class="at-back-btn">
+          <md-icon>arrow_back</md-icon>
+        </button>
+        <span class="at-title" data-i18n="menu_pif_settings">PIF Settings</span>
+      </div>
+      <div id="pif-panel" class="pif-scroll">
+
+        <div class="pif-btn-row">
+          <button type="button" id="pif-fetch" class="pif-btn pif-btn--primary"><md-icon>cloud_download</md-icon><span class="pif-btn-label" data-i18n="pif_fetch">Fetch</span></button>
+          <button type="button" id="pif-view" class="pif-btn pif-btn--primary"><md-icon>visibility</md-icon><span class="pif-btn-label" data-i18n="pif_view">View pif.prop</span></button>
+        </div>
+
+        <div class="ctrl-heading-row">
+          <div class="list-title" data-i18n="pif_spoofing">Spoofing</div>
+          <span class="ctrl-heading-badge" id="pif-badge-spoof">0/6</span>
+        </div>
+        <div class="list-container">
+          <div class="pif-row">
+            <md-icon>build</md-icon>
+            <div class="pif-row-text">
+              <div class="pif-row-title" data-i18n="pif_spoof_build">Spoof Build</div>
+              <span class="pif-row-desc" data-i18n="pif_spoof_build_desc">Play Services fingerprint</span>
+            </div>
+            <md-switch icons data-pif="spoofBuild"></md-switch>
+          </div>
+          <div class="pif-row">
+            <md-icon>dataset</md-icon>
+            <div class="pif-row-text">
+              <div class="pif-row-title" data-i18n="pif_spoof_props">Spoof Props</div>
+              <span class="pif-row-desc" data-i18n="pif_spoof_props_desc">System properties</span>
+            </div>
+            <md-switch icons data-pif="spoofProps"></md-switch>
+          </div>
+          <div class="pif-row">
+            <md-icon>shop</md-icon>
+            <div class="pif-row-text">
+              <div class="pif-row-title" data-i18n="pif_spoof_vending_build">Spoof Build (Play Store)</div>
+              <span class="pif-row-desc" data-i18n="pif_spoof_vending_build_desc">Play Store fingerprint</span>
+            </div>
+            <md-switch icons data-pif="spoofVendingBuild"></md-switch>
+          </div>
+          <div class="pif-row">
+            <md-icon>key</md-icon>
+            <div class="pif-row-text">
+              <div class="pif-row-title" data-i18n="pif_spoof_provider">Spoof Provider</div>
+              <span class="pif-row-desc" data-i18n="pif_spoof_provider_desc">Keystore provider</span>
+            </div>
+            <md-switch icons data-pif="spoofProvider"></md-switch>
+          </div>
+          <div class="pif-row">
+            <md-icon>draw</md-icon>
+            <div class="pif-row-text">
+              <div class="pif-row-title" data-i18n="pif_spoof_signature">Spoof Signature</div>
+              <span class="pif-row-desc" data-i18n="pif_spoof_signature_desc">App signature</span>
+            </div>
+            <md-switch icons data-pif="spoofSignature"></md-switch>
+          </div>
+          <div class="pif-row">
+            <md-icon>android</md-icon>
+            <div class="pif-row-text">
+              <div class="pif-row-title" data-i18n="pif_spoof_vending_sdk">Spoof SDK (Play Store)</div>
+              <span class="pif-row-desc" data-i18n="pif_spoof_vending_sdk_desc">SDK level for Play Store</span>
+            </div>
+            <md-switch icons data-pif="spoofVendingSdk"></md-switch>
+          </div>
+        </div>
+
+        <div class="pif-term">
+          <div class="pif-term-bar">
+            <md-icon>terminal</md-icon>
+            <span class="pif-term-title" data-i18n="pif_terminal">Terminal</span>
+            <span class="pif-spacer"></span>
+            <button type="button" class="pif-term-clear" id="pif-term-clear"><md-icon>delete</md-icon><span data-i18n="pif_clear">clear</span></button>
+          </div>
+          <div id="pif-console" class="pif-term-body"></div>
+        </div>
+      </div>
+      <div id="pif-picker" class="pif-picker" hidden>
+        <div class="pif-picker-sheet" role="dialog" aria-label="Select Device" data-i18n-aria-label="pif_select_device">
+          <div class="pif-picker-title" data-i18n="pif_select_device">Select Device</div>
+          <div class="pif-picker-list" id="pif-picker-list"></div>
+          <div class="pif-picker-actions">
+            <button type="button" class="pif-btn pif-btn--text" id="pif-pick-cancel" data-i18n="common_cancel">Cancel</button>
+            <span class="pif-spacer"></span>
+            <button type="button" class="pif-btn pif-btn--outline" id="pif-pick-autopif">Autopif</button>
+            <button type="button" class="pif-btn pif-btn--primary" id="pif-pick-github">GitHub</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="patch-panel" class="at-panel pif-page">
+      <div class="at-header">
+        <button onclick="closeSecurityPatch()" class="at-back-btn">
+          <md-icon>arrow_back</md-icon>
+        </button>
+        <span class="at-title" data-i18n="menu_patch">Set Security Patch</span>
+      </div>
+      <div class="pif-scroll">
+        <p class="ph-intro" data-i18n="patch_intro">Write a spoofed security patch date to the active keystore backend.</p>
+
+        <div class="list-container">
+          <div class="list-item ph-stacked">
+            <md-icon>security_update_good</md-icon>
+            <div class="list-item-content">
+              <div class="toggle-text" data-i18n="patch_date_title">Security Patch Date</div>
+              <span class="supporting-text" data-i18n="patch_date_hint">Use YYYY-MM-DD</span>
+            </div>
+            <input id="patch-input" class="ph-input" type="text" inputmode="numeric" maxlength="10" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="YYYY-MM-DD" aria-label="Security Patch Date">
+          </div>
+        </div>
+
+        <div class="list-title" data-i18n="patch_fetch_title">Fetch latest date</div>
+        <div class="list-container">
+          <div class="list-item" id="patch-fetch">
+            <md-icon>cloud_download</md-icon>
+            <div class="list-item-content">
+              <div class="toggle-text" data-i18n="patch_fetch_btn">Fetch now</div>
+              <span class="supporting-text" data-i18n="patch_fetch_desc">Get the latest date from the Pixel security bulletin.</span>
+            </div>
+            <div class="spacer"></div>
+            <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+            <md-ripple></md-ripple>
+          </div>
+        </div>
+
+        <div class="list-title" data-i18n="patch_backend_title">Active Backend</div>
+        <div class="list-container">
+          <div class="list-item">
+            <md-icon>key</md-icon>
+            <div class="list-item-content">
+              <div class="toggle-text" id="patch-backend-name">—</div>
+              <span class="supporting-text" data-i18n="patch_backend_hint">Patch date is applied to this backend</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="at-fab-wrap">
+        <button id="patch-save" type="button" class="at-apply-fab">
+          <md-icon class="icon-sm">check</md-icon>
+          <span class="ph-save-label" data-i18n="common_save">Save</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="keybox-panel" class="at-panel pif-page">
+      <div class="at-header">
+        <button onclick="closeCustomKeybox()" class="at-back-btn">
+          <md-icon>arrow_back</md-icon>
+        </button>
+        <span class="at-title" data-i18n="menu_custom_keybox">Set Custom Keybox</span>
+      </div>
+      <div class="pif-scroll">
+        <p class="ph-intro">Select your own keybox XML file and install it to the active keystore backend.</p>
+
+        <div class="list-title">Import File</div>
+        <div class="list-container">
+          <div class="list-item ph-stacked" id="kb-pick-row" style="cursor:pointer">
+            <md-icon>upload_file</md-icon>
+            <div class="list-item-content ph-grow">
+              <div class="toggle-text" id="kb-file-name">No file selected</div>
+              <span class="supporting-text ph-mono" id="kb-file-path">-</span>
+            </div>
+            <md-icon class="icon-chevron">chevron_right</md-icon>
+            <md-ripple></md-ripple>
+          </div>
+        </div>
+
+        <div class="list-title">Status</div>
+        <div class="list-container">
+          <div class="list-item" id="kb-clear-row" style="cursor:pointer">
+            <md-icon>delete</md-icon>
+            <div class="list-item-content">
+              <div class="toggle-text">Clear custom keybox</div>
+              <span class="supporting-text">Remove the saved custom keybox selection</span>
+            </div>
+            <md-ripple></md-ripple>
+          </div>
+        </div>
+
+        <div class="list-title">Active Backend</div>
+        <div class="list-container">
+          <div class="list-item">
+            <md-icon>key</md-icon>
+            <div class="list-item-content">
+              <div class="toggle-text" id="kb-backend-name">—</div>
+              <span class="supporting-text">Keybox will be installed here</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="at-fab-wrap">
+        <button id="kb-apply" type="button" class="at-apply-fab">
+          <md-icon class="icon-sm">check</md-icon>
+          <span class="ph-save-label">Apply &amp; Install</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="rkp-panel" class="at-panel pif-page">
+      <div class="at-header">
+        <button onclick="closeRkpPanel()" class="at-back-btn" aria-label="Back">
+          <md-icon>arrow_back</md-icon>
+        </button>
+        <div class="rkp-head">
+          <span class="at-title" data-i18n="menu_rkp_keybox">RKP Keyboxes</span>
+          <span id="rkp-sub" class="rkp-sub" style="display:none">Select a keybox, then tap Install</span>
+        </div>
+      </div>
+      <div class="pif-scroll">
+        <div id="rkp-loading" class="list-container" style="display:none" role="status" aria-live="polite">
+          <div class="list-item">
+            <span class="rkp-lead"><md-circular-progress indeterminate></md-circular-progress></span>
+            <div class="list-item-content">
+              <div class="toggle-text">Loading catalog</div>
+            </div>
+          </div>
+        </div>
+        <div id="rkp-empty" class="list-container" style="display:none">
+          <div class="list-item">
+            <md-icon>key</md-icon>
+            <div class="list-item-content">
+              <div class="toggle-text">No RKP entries available</div>
+              <span class="supporting-text">Check back later</span>
+            </div>
+          </div>
+        </div>
+        <div id="rkp-error" class="list-container" style="display:none" role="alert">
+          <div class="list-item" data-destructive>
+            <md-icon>cancel</md-icon>
+            <div class="list-item-content">
+              <div class="toggle-text" id="rkp-error-text"></div>
+            </div>
+          </div>
+          <div class="list-item" id="rkp-retry" role="button" tabindex="0" style="cursor:pointer">
+            <md-icon>refresh</md-icon>
+            <div class="list-item-content">
+              <div class="toggle-text">Retry</div>
+            </div>
+            <md-ripple></md-ripple>
+          </div>
+        </div>
+        <div id="rkp-list" class="list-container" style="display:none" role="radiogroup" aria-label="RKP keyboxes"></div>
+      </div>
+      <div id="rkp-bar" class="rkp-bar" style="display:none">
+        <button id="rkp-install" type="button" class="rkp-btn" data-state="idle" disabled>
+          <md-icon class="rkp-btn-icon">check</md-icon>
+          <md-circular-progress class="rkp-btn-spin" indeterminate></md-circular-progress>
+          <span class="rkp-btn-label">Install</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="hash-panel" class="at-panel pif-page">
+      <div class="at-header">
+        <button onclick="closeBootHash()" class="at-back-btn">
+          <md-icon>arrow_back</md-icon>
+        </button>
+        <span class="at-title" data-i18n="advance_set_verified_boot">Set Verified Boot Hash</span>
+      </div>
+      <div class="pif-scroll">
+        <div class="list-title" data-i18n="hash_custom_heading">Custom Hash</div>
+        <div class="list-container">
+          <div class="list-item ph-stacked">
+            <md-icon>fingerprint</md-icon>
+            <div class="list-item-content">
+              <div class="toggle-text" data-i18n="hash_custom_title">Custom Hash</div>
+              <span class="supporting-text" data-i18n="hash_custom_desc">Spoof custom SHA-256 digest</span>
+            </div>
+            <div class="ph-input-wrap">
+              <input id="hash-input" class="ph-input ph-mono" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="64 hex characters" aria-label="Custom Hash">
+              <button type="button" id="hash-reset" class="ph-icon-btn" aria-label="Reset" data-i18n-aria-label="hash_reset"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="list-title" data-i18n="hash_status">Status</div>
+        <div class="list-container">
+          <div class="list-item ph-stacked">
+            <md-icon>verified</md-icon>
+            <div class="list-item-content ph-grow">
+              <div class="toggle-text" id="hash-source" data-i18n="hash_source_none">No hash stored yet</div>
+              <span class="supporting-text ph-mono" id="hash-current">-</span>
+            </div>
+          </div>
+          <div class="list-item" id="hash-refresh">
+            <md-icon>refresh</md-icon>
+            <div class="list-item-content">
+              <div class="toggle-text" data-i18n="hash_refresh">Refresh hash</div>
+              <span class="supporting-text" data-i18n="hash_refresh_desc">Re-read the hash from the device and apply it now.</span>
+            </div>
+            <div class="spacer"></div>
+            <md-circular-progress indeterminate class="action-spinner hidden"></md-circular-progress>
+            <md-ripple></md-ripple>
+          </div>
+        </div>
+
+        <div class="list-title" data-i18n="hash_vbmeta_heading">VBMeta info</div>
+        <div class="list-container">
+          <div class="list-item ph-stacked">
+            <md-icon>dataset</md-icon>
+            <div class="list-item-content ph-grow">
+              <div class="toggle-text" data-i18n="hash_vbmeta_size">VBMeta size</div>
+              <span class="supporting-text ph-mono" id="vbmeta-size">-</span>
+            </div>
+          </div>
+          <div class="list-item ph-stacked">
+            <md-icon>key</md-icon>
+            <div class="list-item-content ph-grow">
+              <div class="toggle-text" data-i18n="hash_vbmeta_alg">Hash algorithm</div>
+              <span class="supporting-text ph-mono" id="vbmeta-alg">-</span>
+            </div>
+          </div>
+          <div class="list-item ph-stacked">
+            <md-icon>build</md-icon>
+            <div class="list-item-content ph-grow">
+              <div class="toggle-text" data-i18n="hash_vbmeta_avb">AVB version</div>
+              <span class="supporting-text ph-mono" id="vbmeta-avb">-</span>
+            </div>
+          </div>
+          <div class="list-item ph-stacked">
+            <md-icon>verified_user</md-icon>
+            <div class="list-item-content ph-grow">
+              <div class="toggle-text" data-i18n="hash_vbmeta_state">Device state</div>
+              <span class="supporting-text ph-mono" id="vbmeta-state">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="at-fab-wrap">
+        <button id="hash-save" type="button" class="at-apply-fab">
+          <md-icon class="icon-sm">check</md-icon>
+          <span class="ph-save-label" data-i18n="common_save">Save</span>
+        </button>
+      </div>
+    </div>
+
+    </main>
+
+    <nav id="nav-bar" class="jerry-nav">
+      <div class="jerry-nav-inner">
+      <button class="jerry-nav-tab active" data-index="0" onclick="jerryNavSwitch(0)">
+        <div class="jerry-nav-pill">
+          <span class="jerry-nav-icon msr" aria-hidden="true">home</span>
+        </div>
+        <span class="jerry-nav-label" data-i18n="nav_home">Home</span>
+      </button>
+      <button class="jerry-nav-tab" data-index="1" onclick="jerryNavSwitch(1)">
+        <div class="jerry-nav-pill">
+          <span class="jerry-nav-icon msr" aria-hidden="true">shield</span>
+        </div>
+        <span class="jerry-nav-label" data-i18n="nav_menu">Action</span>
+      </button>
+      <button class="jerry-nav-tab" data-index="2" onclick="jerryNavSwitch(2)">
+        <div class="jerry-nav-pill">
+          <span class="jerry-nav-icon msr" aria-hidden="true">tune</span>
+        </div>
+        <span class="jerry-nav-label" data-i18n="nav_advancemenu">Advanced</span>
+      </button>
+      <button class="jerry-nav-tab" data-index="3" onclick="jerryNavSwitch(3)">
+        <div class="jerry-nav-pill">
+          <span class="jerry-nav-icon msr" aria-hidden="true">checklist</span>
+        </div>
+        <span class="jerry-nav-label" data-i18n="nav_control">Control</span>
+      </button>
+      <button class="jerry-nav-tab" data-index="4" onclick="jerryNavSwitch(4)">
+        <div class="jerry-nav-pill">
+          <span class="jerry-nav-icon msr" aria-hidden="true">settings</span>
+        </div>
+        <span class="jerry-nav-label" data-i18n="nav_other">Other</span>
+      </button>
+      </div>
+    </nav>
+
+  </div>
+
+  <md-dialog id="progress-dialog">
+    <div slot="content" class="simple-progress">
+      <md-circular-progress indeterminate></md-circular-progress>
+      <p class="md-typescale-body-medium" id="progress-label"></p>
+      <p class="simple-progress__text" id="progress-text"></p>
+    </div>
+  </md-dialog>
+
+</body>
+</html>
