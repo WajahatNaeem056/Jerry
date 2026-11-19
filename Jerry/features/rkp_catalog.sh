@@ -63,11 +63,16 @@ case "$1" in
 
     _tmp=$(mktemp 2>/dev/null || echo "/data/local/tmp/.rkp_kb_$$")
     download "$_url" "$_tmp" >/dev/null 2>&1 || { rm -f "$_tmp"; echo "Keybox download failed" >&2; exit 21; }
+
+    tr -d ' \r\n\t' < "$_tmp" | base64 -d > "${_tmp}.dec" 2>/dev/null
+    if [ -s "${_tmp}.dec" ]; then
+      mv "${_tmp}.dec" "$_tmp"
+    else
+      rm -f "${_tmp}.dec" "$_tmp"; echo "Keybox is not valid Base64" >&2; exit 22
+    fi
     keystore_validate_keybox "$_tmp" >/dev/null 2>&1 || { rm -f "$_tmp"; echo "Keybox is invalid" >&2; exit 22; }
 
-    # Tag the file with its RKP catalog id (XML comment in the prolog, after the <?xml ?>
-    # declaration) so the home screen can show "RKP <id>" instead of "Generic". Validation
-    # above already passed on the untagged file, so a bad tag can only affect display, not install.
+    # Tag the keybox with its catalog id (XML comment) so the home card shows "RKP <id>"; a failed tag only affects display
     awk -v m="<!-- RKP-KEYBOX:${_id} -->" 'NR==1 && /^<\?xml/ { print; print m; next } NR==1 { print m; print; next } { print }' "$_tmp" > "${_tmp}.tagged" \
       && mv "${_tmp}.tagged" "$_tmp" \
       || { rm -f "${_tmp}.tagged"; log "RKP" "Could not tag keybox $_id; it installs untagged and the home card shows Generic"; }
