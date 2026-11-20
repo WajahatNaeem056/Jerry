@@ -22,19 +22,19 @@ _rkp_device_bin() {
 # rkp_device/ must retain completed numbered run folders only: no var/ (outputs, logs, tmp),
 # scratch dir, fake module files or legacy rkp_device_root shim.
 _rkp_device_cleanup() {
-    rm -rf "$RKP_DEVICE_DATA_ROOT/var" \\
-           "$RKP_DEVICE_TMP" \\
-           "$RKP_DEVICE_DATA_ROOT/module.prop" \\
-           "$RKP_DEVICE_DATA_ROOT/bin" \\
-           "$RKP_DEVICE_DATA_ROOT/ui" \\
-           "$RKP_DEVICE_DATA_ROOT/webroot" \\
+    rm -rf "$RKP_DEVICE_DATA_ROOT/var" \
+           "$RKP_DEVICE_TMP" \
+           "$RKP_DEVICE_DATA_ROOT/module.prop" \
+           "$RKP_DEVICE_DATA_ROOT/bin" \
+           "$RKP_DEVICE_DATA_ROOT/ui" \
+           "$RKP_DEVICE_DATA_ROOT/webroot" \
            "/data/adb/JerryManager/rkp_device_root" 2>/dev/null
 }
 
 _rkp_device_exec() {
-    DUCK_TOOLBOX_ROOT="$RKP_DEVICE_DATA_ROOT" \\
-    DUCK_TOOLBOX_DATA_ROOT="$RKP_DEVICE_DATA_ROOT" \\
-    TMPDIR="$RKP_DEVICE_TMP" \\
+    DUCK_TOOLBOX_ROOT="$RKP_DEVICE_DATA_ROOT" \
+    DUCK_TOOLBOX_DATA_ROOT="$RKP_DEVICE_DATA_ROOT" \
+    TMPDIR="$RKP_DEVICE_TMP" \
         "$(_rkp_device_bin)" rkp-device "$@"
 }
 
@@ -49,7 +49,7 @@ _rkp_device_run() {
     _rdr_out="$(_rkp_device_exec "$@")"; _rdr_rc=$?
     case "$_rdr_out" in
         *"valid Duck ToolBox module root"*)
-            printf 'id=duck-toolbox\\nname=Jerry Manager RKP\\nversion=0.2.2-Stable\\nversionCode=155\\n' \\
+            printf 'id=duck-toolbox\nname=Jerry Manager RKP\nversion=0.2.2-Stable\nversionCode=155\n' \
                 > "$RKP_DEVICE_DATA_ROOT/module.prop"
             ensure_dir "$RKP_DEVICE_DATA_ROOT/bin"
             _rdr_out="$(_rkp_device_exec "$@")"; _rdr_rc=$?
@@ -60,7 +60,7 @@ _rkp_device_run() {
         provision) ;;
         *) _rkp_device_cleanup ;;
     esac
-    printf '%s\\n' "$_rdr_out"
+    printf '%s\n' "$_rdr_out"
     unset _rdr_out
     return "$_rdr_rc"
 }
@@ -78,7 +78,7 @@ _rkp_device_find_run_dir() {
         _rdp_count=$((_rdp_count + 1))
     done
     [ "$_rdp_count" -eq 1 ] || return 1
-    printf '%s\\n' "$_rdp_found"
+    printf '%s\n' "$_rdp_found"
 }
 
 # JSON envelope: prerequisites_met, android_arm64, root, qualcomm_soc, mediatek_soc,
@@ -100,20 +100,20 @@ rkp_device_provision() {
     _rkp_device_cleanup
     ensure_dir "$RKP_DEVICE_DATA_ROOT"
 
-    _rdp_result=$(_rkp_device_run provision \\
-        --protocol "$_rdp_protocol" \\
+    _rdp_result=$(_rkp_device_run provision \
+        --protocol "$_rdp_protocol" \
         --acknowledge-limitations)
     _rdp_rc=$?
     if [ "$_rdp_rc" -ne 0 ]; then
         _rkp_device_cleanup
-        printf '%s\\n' "$_rdp_result"
+        printf '%s\n' "$_rdp_result"
         unset _rdp_protocol _rdp_result
         return "$_rdp_rc"
     fi
 
     _rdp_run_dir=$(_rkp_device_find_run_dir) || {
         echo "Duck provision succeeded but exactly one generated RKP run folder was not found" >&2
-        printf '%s\\n' "$_rdp_result"
+        printf '%s\n' "$_rdp_result"
         unset _rdp_protocol _rdp_result
         return 1
     }
@@ -123,7 +123,7 @@ rkp_device_provision() {
     for _rdp_file in keybox.xml private_key.pem cert_chain.der csr.cbor; do
         [ -s "$_rdp_run_dir/$_rdp_file" ] || {
             echo "RKP output is incomplete: missing $_rdp_file" >&2
-            printf '%s\\n' "$_rdp_result"
+            printf '%s\n' "$_rdp_result"
             unset _rdp_protocol _rdp_result
             return 1
         }
@@ -133,21 +133,21 @@ rkp_device_provision() {
     _rdp_suffix=${_rdp_run_name#rkp-device-}
     [ -n "$_rdp_suffix" ] || {
         echo "Duck generated an unexpected RKP run folder name" >&2
-        printf '%s\\n' "$_rdp_result"
+        printf '%s\n' "$_rdp_result"
         unset _rdp_protocol _rdp_result
         return 1
     }
     _rdp_destination="$RKP_DEVICE_DATA_ROOT/rkp_device_$_rdp_suffix"
     [ ! -e "$_rdp_destination" ] || {
         echo "RKP destination already exists; refusing to overwrite it: $_rdp_destination" >&2
-        printf '%s\\n' "$_rdp_result"
+        printf '%s\n' "$_rdp_result"
         unset _rdp_protocol _rdp_result
         return 1
     }
 
     mv "$_rdp_run_dir" "$_rdp_destination" || {
         echo "Could not move the generated RKP folder; original output was preserved" >&2
-        printf '%s\\n' "$_rdp_result"
+        printf '%s\n' "$_rdp_result"
         unset _rdp_protocol _rdp_result
         return 1
     }
@@ -155,9 +155,9 @@ rkp_device_provision() {
     RKP_DEVICE_OUTPUT="$_rdp_destination/keybox.xml"
     # The completed run is now outside var/, so cleanup cannot remove its four artifacts.
     _rkp_device_cleanup
-    printf '%s\\n' "$_rdp_result"
+    printf '%s\n' "$_rdp_result"
 
-    unset _rdp_protocol _rdp_result _rdp_run_dir _rdp_run_name _rdp_suffix \\
+    unset _rdp_protocol _rdp_result _rdp_run_dir _rdp_run_name _rdp_suffix \
           _rdp_destination _rdp_file _rdp_outputs _rdp_found _rdp_count _rdp_candidate
     return 0
 }
