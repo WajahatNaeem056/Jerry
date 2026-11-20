@@ -39,6 +39,7 @@ _jm_install_ts() {
   mv "$MODPATH/ts/lib/$_ts_abi/libinject.so" "$MODPATH/ts/inject"
   rm -rf "$MODPATH/ts/lib"
   chmod 755 "$MODPATH/ts/daemon" "$MODPATH/ts/inject" "$MODPATH/ts/supervisor.sh"
+  [ -f "$MODPATH/dex/duckd" ] && chmod 755 "$MODPATH/dex/duckd"
 
   # A separate keystore module would run next to the built-in one and clash in keystore2
   for _ts_old in $TS_CONFLICT_IDS; do

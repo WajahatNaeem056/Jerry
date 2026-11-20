@@ -35,7 +35,7 @@ case "$1" in
     keystore_validate_keybox "$RKP_DEVICE_OUTPUT" >/dev/null 2>&1 || { echo "Keybox is invalid" >&2; exit 22; }
 
     # Tag so the home card shows "RKP Device" (same convention as rkp_catalog.sh)
-    awk 'NR==1 && /^<\?xml/ { print; print "<!-- RKP-DEVICE -->"; next } NR==1 { print "<!-- RKP-DEVICE -->"; print; next } { print }' \
+    awk 'NR==1 && /^<\?xml/ { print; print "<!-- RKP-KEYBOX:device -->"; next } NR==1 { print "<!-- RKP-KEYBOX:device -->"; print; next } { print }' \
       "$RKP_DEVICE_OUTPUT" > "${RKP_DEVICE_OUTPUT}.tagged" \
       && mv "${RKP_DEVICE_OUTPUT}.tagged" "$RKP_DEVICE_OUTPUT" \
       || { rm -f "${RKP_DEVICE_OUTPUT}.tagged"; log "RKP_DEVICE" "Could not tag keybox; home card shows Generic"; }
