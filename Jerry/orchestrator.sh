@@ -25,7 +25,7 @@ _reliable_patterns_for_tag() {
         TARGET) echo "Merge pass: added *" ;;
         SECURITY_PATCH) echo "Writing * via *" ;;
         BOOT_HASH) echo "Stored Jerry boot hash (source: *)" ;;
-        KEYBOX) echo "Custom keybox installed from *|Checking Google revocation for serial *|Keybox is not revoked — clean|Keybox installed successfully" ;;
+        KEYBOX) echo "Custom keybox installed from *|Checking Google revocation for serial *|Keybox is not revoked — clean|Keybox keys: *|Keybox expires: *|Keybox revoked: *|Keybox revocation unknown|Keybox installed successfully" ;;
         PIF) echo "Start|Detected * variant|Selected device: *|Finish" ;;
         CLEANUP) echo "Finish" ;;
         *) echo "" ;;
